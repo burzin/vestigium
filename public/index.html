@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Vestigium Tag Management System</title>
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="../../assets/js/html5shiv.js"></script>
+      <script src="../../assets/js/respond.min.js"></script>
+    <![endif]-->
+    <style>
+      .hoverrow:hover {
+        background: #f5f5f5;
+        cursor: pointer;
+      }
+      #history, #content {
+        padding: 0 0 20px 0;
+      }
+      .table tr:nth-child(odd) {
+        background: #F5F5F5;
+      }
+      th {
+        background: #EEE;
+      }
+      .titleBox {
+        color: #EEE;
+        background: #6f5499;
+        background-image: linear-gradient(to bottom,#563d7c 0,#6f5499 100%);
+        text-shadow: 0 1px 0 rgba(0,0,0,0.1);
+        box-shadow: 1px 1px 1px 1px #5F6060;
+        padding: 20px 0 20px 20px;
+        margin: 0 0 10px 0;
+        background-repeat: repeat-x;
+        font-size:24px;
+      }
+      .titleBox small {
+        color: #cdbfe3;
+      }
+      #navtabs {
+        margin: 10px 0 0 10px;
+      }
+      .navbar {
+        margin:0;
+        border-radius: 0;
+      }
+      body {
+        padding-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar navbar-inverse">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Vestigium <small>Tag Management System</small></a>
+        </div>
+        <div class="btn-group" id="navtabs">
+        </div>
+        <p class="navbar-text navbar-right"><a class="navbar-link" href="/tms/help">Help</a></p>
+      </div>
+    </div>
+    <!-- this pushes down the top content below the nav -->
+    <div id="content"></div>
+    <div id="history"></div>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="/js/jquery-1.9.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/main.js"></script>
+  </body>
+</html>

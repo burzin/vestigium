@@ -1,0 +1,20 @@
+{
+    "appPort": 8992,
+    "minify": ["prd", "stg"],
+    "environments": ["prd","dev","stg","int"],
+    "git": {
+        "type": "gitlabs",
+        "token": "superSecretPassword",
+        "host": "git.mysite.com",
+        "port": 443,
+        "path": "/api/v3/projects/{id}/repository/files?file_path={path}{ref}"
+    },
+    "database": {
+        "type": "mysql",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": "",
+        "database": "tms"
+    }
+}
