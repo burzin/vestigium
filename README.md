@@ -119,28 +119,46 @@ Helper Methods
 ==============
 
 The following helper methods are also part of the `tms` global object:
+  
+DOM
+===
 
-* createIframe(src, trackingObject);
-* createPixel(src, trackingObject);
-* createScript(src, trackingObject);
-* track(trackingObject);
+* createIframe(src);
+* createPixel(src);
+* createScript(src);
+
+Cookies
+=======
+
 * getItem(cookieName);
 * setItem(cookieName, cookieValue, vEnd, sPath, sDomain, bSecure);
 * hasItem(cookieName);
+
+Querystring
+===========
 * getQueryString();
 
-Besides making syntax easier, using the API will allow you to utilize the
-tag audit tracking API.  You do this by calling `track(trackingObject)` or by passing
-the optional `trackingObject` argument to the helper method `create*` functions.
+Returns an object representing the querystring key value pairs.
 
-The `trackingObject` looks like this:
 
-    {
-        partnerName: "Name of this tag",
-        targetEvent: "Name of this event",
-        resourceType: "Type of resource (automatic when using create methods)",
-        trackedResourceUrl: "URL of this tag (automatic when using create methods)"
-    }
+The MIT License (MIT)
 
-This audit tracking allows us to confirm the number of times our 3rd party advertisers
-claim their tag was displayed.
+Copyright (c) 2014 Tony Germaneri
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
