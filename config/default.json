@@ -1,13 +1,21 @@
 {
     "appPort": 8992,
     "minify": ["prd", "stg"],
-    "environments": ["prd","dev","stg","int"],
+    "environments": ["dev", "int", "stg", "prd"],
+    "controlServers": [
+        "http://prd-tagserver001.mydomain.com:8080",
+        "http://prd-tagserver002.mydomain.com:8080",
+        "http://prd-tagserver003.mydomain.com:8080"
+    ],
+    "cacheExpiresSeconds": 300,
+    "etag": true,
     "git": {
         "type": "gitlabs",
-        "token": "superSecretPassword",
-        "host": "git.mysite.com",
+        "token": "mysecrettoken",
+        "host": "git.mydomain.com",
         "port": 443,
-        "path": "/api/v3/projects/{id}/repository/files?file_path={path}{ref}"
+        "readApiPath": "/api/v3/projects/{id}/repository/files?file_path={path}{ref}",
+        "getRepoInfoPath": "/api/v3/projects/{repoName}"
     },
     "database": {
         "type": "mysql",

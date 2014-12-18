@@ -17,16 +17,12 @@
     "mocha": "1.9.0",
     "restify": "*",
     "should": "1.2.x",
-    "jslint": "*",
     "grunt-cli": "*",
-    "grunt-contrib-clean": "0.5.0",
-    "grunt-contrib-copy": "*",
-    "grunt-contrib-jshint": "0.6.3",
-    "grunt-mocha-test": "0.6.3",
-    "xunit-file": "0.0.4",
-    "grunt-istanbul": "0.2.2",
-    "grunt-istanbul-coverage": "0.0.1",
-    "grunt-jsdoc": "*"
+    "grunt-contrib-clean": "*",
+    "grunt-contrib-jshint": "*",
+    "grunt-mocha-istanbul": "*",
+    "grunt-jsdoc": "*",
+    "proxyquire": "1.0.0"
   },
   "scripts": {
     "test": "node_modules/mocha/bin/mocha"

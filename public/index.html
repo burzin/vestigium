@@ -49,8 +49,20 @@
         margin:0;
         border-radius: 0;
       }
+      .btnGroup {
+        z-index: 0;
+      }
+      .table {
+        margin:auto;
+        width: 96%;
+        border: solid 1px #666;
+        box-shadow: 1px 1px 1px 1px #5F6060;
+      }
       body {
         padding-top: 0;
+      }
+      td {
+        padding:3px;
       }
     </style>
   </head>
@@ -62,7 +74,7 @@
         </div>
         <div class="btn-group" id="navtabs">
         </div>
-        <p class="navbar-text navbar-right"><a class="navbar-link" href="/tms/help">Help</a></p>
+        <p class="navbar-text navbar-right"><a class="navbar-link" href="/private_tagjs/help">Help</a></p>
       </div>
     </div>
     <!-- this pushes down the top content below the nav -->
@@ -71,6 +83,7 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+    <script src="/js/async.js"></script>
     <script src="/js/jquery-1.9.1.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/main.js"></script>

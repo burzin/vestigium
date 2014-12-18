@@ -1,17 +1,21 @@
+/*jslint loopfunc: true */
 $(function(){
     var content = document.getElementById('content'),
         history = document.getElementById('history'),
         nav = document.getElementById('navtabs'),
         x,
-        activeName = 'prd',
+        gitType,
+        activeName,
         activeHistoryId,
-        envs = ['prd','dev','stg','int'],
+        envs = ["dev", "int", "stg", "prd"],
         tabs = [],
-        headers = ['id', 'env', 'repoid', 'url', 'path', 'ref', 'timestamp',
-        'historyId', 'comment', 'enabled', 'version', 'buildOutput'],
-        historyHeaders = ['historyDetailId', 'id', 'env', 'repoid', 'url', 'path',
-        'ref', 'timestamp', 'comment', 'historyId', 'historyTimestamp', 'enabled', 'version', 'buildOutput'],
-        topZIndex = 100;
+        headers = ['id', 'env', 'Repository', 'Name', 'Path', 'Ref/Branch/Tag', 'Date',
+        'historyId', 'Comment', 'Enabled', 'version', 'buildOutput', 'parentId'],
+        configFields = ['id', 'env', 'repoid', 'url', 'path', 'ref', 'timestamp',
+        'historyId', 'comment', 'enabled', 'version', 'buildOutput', 'parentId'],
+        historyHeaders = ['historyDetailId', 'id', 'env', 'Repository', 'Name', 'Path',
+        'Ref/Branch/Tag', 'Date', 'comment', 'historyId', 'historyTimestamp', 'Enabled', 'version', 'buildOutput', 'parentId'],
+        topZIndex = 2000;
     for(x = 0; x < envs.length; x++){
         (function(x){
             var button = document.createElement('button');
@@ -37,7 +41,7 @@ $(function(){
             nav.appendChild(button);
         }(x));
     }
-    refreshContent('prd');
+    refreshContent(envs[0]);
     function bindErrorMessage(row, err){
         var m;
         row.onmouseover = function(){
@@ -104,10 +108,14 @@ $(function(){
             success: function(e){
                 history.innerHTML = '';
                 content.innerHTML = '';
+                gitType = e.gitType;
                 e.history = e.history || [];
                 e.config = e.config || [];
                 if(e.config.length > 0){
-                    content.innerHTML += '<h3 class="titleBox">Current Tags in <b>' + env + '</b><br><small>' + e.config[0].comment + '<br>Build ' + e.versionHash.version + '</small></h3>';
+                    content.innerHTML += '<h3 class="titleBox">Current Tags in <b>' + env +
+                    '</b><br><small>Comment: ' + e.config[0].comment +
+                    '<br>Version: ' + e.config[0].version +
+                    (e.config[0].builtOn ? '<br>Built On: ' + (new Date(e.config[0].builtOn).toISOString()) : '') + '</small></h3>';
                 }else{
                     content.innerHTML += '<h3 class="titleBox">No tags in <b>' + env + '</b><br><small>Add some tags</small></h3>';
                 }
@@ -118,25 +126,41 @@ $(function(){
                     addButton = document.createElement('button'),
                     t;
                 rebuild.onclick = function(){
+                    var butt = this;
+                    butt.disabled = true;
                     $('.hoverrow').each(function(){
                         this.style.background = '';
                     });
-                    $.ajax({
-                        url: '/build/' + env,
-                        method: 'get',
-                        success: function(e){
-                            message({
-                                title: 'Build Finished',
-                                body: 'Build successfully completed',
-                                timeout: 3000,
-                                level: 'good'
+                    // n+1 mega hack:
+                    // TODO: someday replace with this a proper n+1 implementation
+                    // whatever that might look like 
+                    var work = e.controlServers.map(doRebuild);
+                    function doRebuild(baseURL){
+                        return function(done){
+                            $.ajax({
+                                url: baseURL + '/build/' + env,
+                                method: 'get',
+                                success: function(){ done(); },
+                                error: done
                             });
-                        },
-                        error: buildFailure
+                        };
+                    }
+                    async.parallel(work, function(err){
+                        if(err){
+                            return buildFailure();
+                        }
+                        message({
+                            title: 'Published successfully',
+                            body: 'Build successfully completed',
+                            timeout: 3000,
+                            level: 'good'
+                        });
+                        refreshContent(env);
+                        butt.disabled = false;
                     });
                 };
                 showbuild.onclick = function(){
-                    window.open('/tms/' + env + '/' + e.versionHash.version + '/main.js');
+                    window.open('/tagjs/' + env + '/main.js');
                 };
                 showbuild.className = 'btn btn-primary';
                 showbuild.style.display = 'inline-block';
@@ -149,37 +173,44 @@ $(function(){
                 content.appendChild(showbuild);
                 content.appendChild(addButton);
                 var clickToEdit = document.createElement('div');
-                clickToEdit.innerHTML = 'Click row to edit';
+                clickToEdit.innerHTML = '<i style="margin-left:10px;">Click row to edit</i>';
                 clickToEdit.style.marginLeft = '10px';
                 content.appendChild(clickToEdit);
                 t = createTable(e.config, headers, function(x, y, data, datas){
-                        if([0, 1, 7, 8, 11].indexOf(y) !== -1){
-                            if(y === 0){
-                                this.parentNode.id = data;
-                                if(e.tagErrors[data] !== undefined){
-                                    this.parentNode.style.background = '#d9534f';
-                                    this.parentNode.style.color = 'white';
-                                    e.tagErrors[data].toString = function(){
-                                        var t = e.tagErrors[data];
+                    if([0, 1, 7, 8, 10, 11, 12, 13, 14].indexOf(y) !== -1){
+                        if(y === 0){
+                            this.parentNode.id = data;
+                            if(e.tagErrors[data] !== undefined){
+                                this.parentNode.style.background = '#d9534f';
+                                this.parentNode.style.color = 'white';
+                                e.tagErrors[data].toString = function(){
+                                    var t = e.tagErrors[data];
+                                    if(t.annotated){
                                         return t.annotated + ':' + t.line + ':' + t.column + '\n' + t.message;
-                                    };
-                                    bindErrorMessage(this.parentNode, e.tagErrors[data].toString());
-                                }
+                                    }else{
+                                        return t.syscall + ':' + t.errno + '(' + t.code + ')';
+                                    }
+                                };
+                                bindErrorMessage(this.parentNode, e.tagErrors[data].toString());
                             }
-                            this.style.display = 'none';
-                            this.style.visibility = 'hidden';
-                        }else if(y === 9 && x !== -1){
-                            this.innerHTML = '';
-                            if(data === 1){
-                                this.className = 'glyphicon glyphicon-ok';
-                            }
-                        }else if(y === 6 && typeof data === 'number'){
-                            this.innerHTML = new Date(data).toISOString();
                         }
-                    }),
-                    select = document.createElement('select');
-                    select.style.marginLeft = '10px';
-                    t.className = 'hovert table';
+                        this.style.display = 'none';
+                        this.style.visibility = 'hidden';
+                    }else if(y === 9 && x !== -1){
+                        this.innerHTML = '';
+                        if(data === 1){
+                            this.className = 'glyphicon glyphicon-ok';
+                            this.style.color = 'green';
+                        }
+                    }else if(y === 6 && typeof data === 'number'){
+                        this.innerHTML = new Date(data).toISOString();
+                    }else if(x === -1 && y === 2){
+                        this.innerHTML = (gitType === 'gitlabs' ? 'GitLabs' : 'GitHub') + ' Repository';
+                    }
+                });
+                select = document.createElement('select');
+                select.style.marginLeft = '10px';
+                t.className = 'hovert table';
                 for(x = 0; x < e.history.length; x++){
                     if(x === 0){
                         fillHistory(e.history[x].historyId, env);
@@ -203,23 +234,24 @@ $(function(){
                     var control = {},
                     x,
                     data = {};
-                    for(x = 0; x < headers.length; x++){
-                        if(headers[x] === 'id'){
-                            data[headers[x]] = createUUID();
-                        }else if(headers[x] === 'env'){
-                            data[headers[x]] = env;
+                    for(x = 0; x < configFields.length; x++){
+                        if(configFields[x] === 'id'){
+                            data[configFields[x]] = createUUID();
+                        }else if(configFields[x] === 'env'){
+                            data[configFields[x]] = env;
                         }else{
-                            data[headers[x]] = '';
+                            data[configFields[x]] = '';
                         }
                     }
                     data.comment = '';
                     var d = dialog('Add a new tag'),
                     f = createForm({
+                        headers: headers,
                         disabled: ['id'],
                         checkboxes: ['enabled'],
                         obj: data,
-                        dontSubmit: ['timestamp', 'historyId', 'version', 'buildOutput'],
-                        hidden: ['env'],
+                        dontSubmit: ['timestamp', 'historyId', 'version', 'buildOutput', 'buildTime', 'builtOn'],
+                        hidden: ['env', 'parentId'],
                         submit: function submit(obj, inputs){
                             control.obj = obj;
                             control.inputs = inputs;
@@ -286,13 +318,14 @@ $(function(){
                     (function(x){
                         t.data[x][0].parentNode.addEventListener('click', function(){
                             var data = this.rowData,
-                                d = dialog(env + ' - Editing ' + data.path + ' repoid ' + data.repoid),
+                                d = dialog(env + ' - Editing ' + data.url),
                                 control = {};
                             data.comment = '';
                             f = createForm({
+                                headers: headers,
                                 disabled: ['id'],
-                                dontSubmit: ['timestamp', 'historyId', 'version', 'buildOutput'],
-                                hidden: ['env'],
+                                dontSubmit: ['timestamp', 'historyId', 'version', 'buildOutput', 'buildTime', 'builtOn'],
+                                hidden: ['env', 'parentId'],
                                 checkboxes: ['enabled'],
                                 obj: data,
                                 submit: function(obj, inputs){
@@ -326,6 +359,73 @@ $(function(){
                                     return function(){
                                         this.disabled = true;
                                         d.close();
+                                    };
+                                },
+                                move: function(obj, inputs){
+                                    control.obj = obj;
+                                    control.inputs = inputs;
+                                    return function(){
+                                        var mvd = dialog('Please select an environment to copy to.',
+                                            {height: '160px'}),
+                                            selectMessage = document.createElement('p'),
+                                            ok = document.createElement('button'),
+                                            cancel = document.createElement('button'),
+                                            selectedEnv,
+                                            btnGroup = document.createElement('div'),
+                                            fromButtonGroup = document.createElement('div'),
+                                            fromButton = document.createElement('div'),
+                                            x = 0,
+                                            envButtons = [],
+                                            arrowGlyph = document.createElement('div');
+                                        arrowGlyph.className = 'glyphicon glyphicon-arrow-right';
+                                        arrowGlyph.style.color = '#5bc0de';
+                                        arrowGlyph.style.height = '50px';
+                                        arrowGlyph.style.width = '50px';
+                                        arrowGlyph.style.fontSize = '40px';
+                                        arrowGlyph.style.margin = '-20px 0 15px 0';
+                                        arrowGlyph.style.verticalAlign = 'text-top';
+                                        ok.className = 'btn btn-primary';
+                                        cancel.className = 'btn btn-primary';
+                                        fromButton.className = 'btn btn-info';
+                                        btnGroup.className = 'btn-group';
+                                        fromButtonGroup.className = 'btn-group';
+                                        btnGroup.style.margin = '10px 10px 15px -8px';
+                                        ok.innerHTML = 'Copy';
+                                        ok.style.margin = '0 10px 0 200px';
+                                        cancel.style.margin = '0 10px 0 10px';
+                                        cancel.innerHTML = 'Cancel';
+                                        fromButton.innerHTML = env;
+                                        fromButtonGroup.style.margin = '10px 0 15px 73px';
+                                        fromButtonGroup.appendChild(fromButton);
+                                        envs.forEach(function(v){
+                                            if(env === v){ return; }
+                                            if(x === 0){
+                                                selectedEnv = v;
+                                            }
+                                            var b = document.createElement('button');
+                                            b.innerHTML = v;
+                                            b.env = v;
+                                            b.className = 'btn btn-default' + (x++ === 0 ? ' active' : '');
+                                            b.onclick = function(){
+                                                selectedEnv = v;
+                                                envButtons.forEach(function(n){
+                                                    n.className = 'btn btn-default' + (n.env === v ? ' active' : '');
+                                                });
+                                            };
+                                            envButtons.push(b);
+                                            btnGroup.appendChild(b);
+                                        });
+                                        cancel.onclick = function(){
+                                            mvd.close();
+                                        };
+                                        ok.onclick = function(){
+                                            this.disabled = true;
+                                            copyTag(control.inputs.get('parentId').value, env, selectedEnv, function(e){
+                                                mvd.close();
+                                            });
+                                        };
+                                        mvd.content([fromButtonGroup, arrowGlyph, btnGroup, ok, cancel]);
+                                        btnGroup.style.display = 'inline-block';
                                     };
                                 },
                                 delete: function(){
@@ -381,7 +481,7 @@ $(function(){
                                 cancelText: 'Cancel'
                             });
                             f.style.marginTop = '10px';
-                            d.content([f.submitButton, f.cancelButton, f.deleteButton, f]);
+                            d.content([f.submitButton, f.cancelButton, f.deleteButton, f.moveButton, f]);
                             f.inputs.forEach(function(input){
                                 input.addEventListener('keydown', function(e){
                                     if(e.keyCode === 13){
@@ -417,6 +517,30 @@ $(function(){
             },
             error: function(e){
                 buildFailure(e);
+                if(callback){
+                    callback(e);
+                }
+            }
+        });
+    }
+    function copyTag(tagId, srcEnv, targetEnv, callback){
+        $.ajax({
+            url: 'responder',
+            data: JSON.stringify({
+                method: 'copyTag',
+                id: tagId,
+                comment: 'Copied ' + tagId + ' from ' + srcEnv + ' to ' + targetEnv,
+                targetEnv: targetEnv,
+                srcEnv: srcEnv
+            }),
+            method: 'post',
+            contentType: 'application/json',
+            success: function(e){
+                if(callback){
+                    callback();
+                }
+            },
+            error: function(e){
                 if(callback){
                     callback(e);
                 }
@@ -479,13 +603,14 @@ $(function(){
             success: function(e){
                 activeHistoryId = historyId;
                 var t = createTable(e, historyHeaders, function(x, y, data, datas){
-                    if([0,1,2,8,9,10,13].indexOf(y) !== -1){
+                    if([0, 1, 2, 8, 9, 10, 12, 13, 14, 15].indexOf(y) !== -1){
                         this.style.display = 'none';
                         this.style.visibility = 'hidden';
                     }else if(y === 11 && x !== -1){
                         this.innerHTML = '';
                         if(data === 1){
                             this.className = 'glyphicon glyphicon-ok';
+                            this.style.color = 'green';
                         }
                     }else if(y === 7 && typeof data === 'number'){
                         this.innerHTML = new Date(data).toISOString();
@@ -497,8 +622,8 @@ $(function(){
                     var date = new Date(e[0].snapdate).toISOString(),
                         historyTitle = document.getElementById('changeHistory');
                         historyTitle.innerHTML = '<h3 class="titleBox" id="changeHistory">Change History for ' +
-                        env + '<br><small>' + e[0].comment + '<br>Build ' + e[0].version + 
-                        '<br>Changed On: ' + date + '</small></h3>'
+                        env + '<br><small>Comment: ' + e[0].comment + '<br>Version: ' + e[0].version + 
+                        '<br>Changed On: ' + date + '</small></h3>';
                     history.appendChild(t);
                 }
             }
@@ -524,7 +649,7 @@ $(function(){
         d.style.top = '60px';
         d.style.left = '25%';
         d.style.height = rect.height;
-        d.style.overflow = 'scroll';
+        d.style.overflow = 'auto';
         d.content = function(eles){
             for(var x = 0; x < eles.length; x++){
                 d.appendChild(eles[x]);
@@ -560,6 +685,7 @@ $(function(){
         args.submit = args.submit || function(){};
         args.delete = args.delete || function(){};
         args.cancel = args.cancel || function(){};
+        args.move = args.move || function(){};
         args.disabled = args.disabled || [];
         args.hidden = args.hidden || [];
         var keys = Object.keys(args.obj),
@@ -570,7 +696,8 @@ $(function(){
             input,
             inputs = [],
             submitButton,
-            cancelButton;
+            cancelButton,
+            moveButton;
         for(x = 0; x < keys.length; x++){
             if(args.dontSubmit.indexOf(keys[x]) !== -1){ continue; }
             input = document.createElement('input');
@@ -592,7 +719,11 @@ $(function(){
             input.disabled = args.disabled.indexOf(keys[x]) !== -1;
             fg.appendChild(label);
             fg.appendChild(input);
-            label.innerHTML = args.headers ? args.headers[x] : keys[x];
+            if(args.headers){
+                label.innerHTML = args.headers ? args.headers[x] : keys[x];
+            }else{
+                label.innerHTML = args.headers[x] ? args.headers[x] : keys[x];
+            }
             d.appendChild(fg);
         }
         inputs.get = function(name){
@@ -608,18 +739,24 @@ $(function(){
         cancelButton.className = 'btn btn-primary';
         deleteButton = document.createElement('button');
         deleteButton.className = 'btn btn-primary';
+        moveButton = document.createElement('button');
+        moveButton.className = 'btn btn-primary';
         cancelButton.innerHTML = args.cancelText || 'Cancel';
         submitButton.innerHTML = args.submitText || 'Submit';
         deleteButton.innerHTML = args.deleteText || 'Delete';
+        moveButton.innerHTML = args.moveText || 'Copy';
         submitButton.onclick = args.submit(args.obj, inputs);
         submitButton.style.margin = '5px 10px 0 10px';
         cancelButton.onclick = args.cancel(args.obj, inputs);
         cancelButton.style.margin = '5px 10px 0 10px';
         deleteButton.onclick = args.delete(args.obj, inputs);
         deleteButton.style.margin = '5px 10px 0 10px';
+        moveButton.onclick = args.move(args.obj, inputs);
+        moveButton.style.margin = '5px 10px 0 10px';
         d.submitButton = submitButton;
         d.cancelButton = cancelButton;
         d.deleteButton = deleteButton;
+        d.moveButton = moveButton;
         d.inputs = inputs;
         return d;
     }
@@ -689,7 +826,7 @@ $(function(){
             success: function(e){
                 message({
                     title: 'Tag Saved',
-                    body: e.message,
+                    body: 'Tag saved successfully',
                     timeout: 3000,
                     level: 'info'
                 });
