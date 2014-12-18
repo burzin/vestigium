@@ -1,5 +1,5 @@
 Vestigium Tag Management System
-==========================
+===============================
 
 An open source enterprise tag management system. It is meant to be a replacement for Tealium, TMS etc.
 
@@ -32,34 +32,34 @@ Config
 Below is an example of a config file.  Config file must be ./config/default.json
 
 
-{
-    "appPort": 8992,
-    "minify": ["prd", "stg"],
-    "environments": ["dev", "int", "stg", "prd"],
-    "controlServers": [
-        "http://prd-tagserver001.mydomain.com:8080",
-        "http://prd-tagserver002.mydomain.com:8080",
-        "http://prd-tagserver003.mydomain.com:8080"
-    ],
-    "cacheExpiresSeconds": 300,
-    "etag": true,
-    "git": {
-        "type": "gitlabs",
-        "token": "mysecrettoken",
-        "host": "git.mydomain.com",
-        "port": 443,
-        "readApiPath": "/api/v3/projects/{id}/repository/files?file_path={path}{ref}",
-        "getRepoInfoPath": "/api/v3/projects/{repoName}"
-    },
-    "database": {
-        "type": "mysql",
-        "host": "127.0.0.1",
-        "port": 3306,
-        "user": "root",
-        "password": "",
-        "database": "tms"
+    {
+        "appPort": 8992,
+        "minify": ["prd", "stg"],
+        "environments": ["dev", "int", "stg", "prd"],
+        "controlServers": [
+            "http://prd-tagserver001.mydomain.com:8080",
+            "http://prd-tagserver002.mydomain.com:8080",
+            "http://prd-tagserver003.mydomain.com:8080"
+        ],
+        "cacheExpiresSeconds": 300,
+        "etag": true,
+        "git": {
+            "type": "gitlabs",
+            "token": "mysecrettoken",
+            "host": "git.mydomain.com",
+            "port": 443,
+            "readApiPath": "/api/v3/projects/{id}/repository/files?file_path={path}{ref}",
+            "getRepoInfoPath": "/api/v3/projects/{repoName}"
+        },
+        "database": {
+            "type": "mysql",
+            "host": "127.0.0.1",
+            "port": 3306,
+            "user": "root",
+            "password": "",
+            "database": "tms"
+        }
     }
-}
 
 Tag Entry
 =========
@@ -140,6 +140,34 @@ Querystring
 
 Returns an object representing the querystring key value pairs.
 
+Client Side Implementation
+==========================
+
+### you do not need BOTH of these scripts, pick the one you like
+
+### this version relies on HTTP cache control, which can be sketchy in some envs
+
+    <script src="//cache.mydomain.com/tms/prd/main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", tms.view);
+    </script>
+    
+### this version uses a URL that changes once an hour
+
+    <script>
+        var s = document.createElement('script');
+        s.src = location.protocol + '//cache.mydomain.com/tagjs/prd/main.js?v' +
+         Math.floor(new Date().getTime() / 3600000) * 3600000;
+        s.onload = function(){
+            tms.view();
+        };
+        document.head.appendChild(s);
+    </script>
+
+Note: the querystring parameter `v` above does nothing, it just invalidates the cached URL.
+
+License
+=======
 
 The MIT License (MIT)
 
